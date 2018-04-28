@@ -6,5 +6,5 @@
 
 # hyperledger
 
-[一步一步搭建hyperledger环境](./手工搭建hyperledger环境.md)
+[一步一步搭建hyperledger环境](./build_fabric_network_step_by_step.md)
 
