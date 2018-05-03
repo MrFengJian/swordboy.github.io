@@ -531,6 +531,12 @@ services:
 
 #5 初始化fabric环境 
 
+>注意：启动前，手动拉取下列相关镜像的1.0.0版本，并更名为latest版本。
+>
+>- hyperledger/fabric-tools:x86_64-1.0.0
+>- hyperledger/fabric-orderer:x86_64-1.0.0
+>- hyperledger/fabric-peer:x86_64-1.0.0
+
 ##5.1 启动环境
 
 使用docker-compose来启动环境。命令行如下：
