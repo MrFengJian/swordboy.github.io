@@ -370,8 +370,6 @@ orderer0.example.com:
 在容器`cli`中依次执行下列命令，测试channel创建、peer加入channel、chaincode的安装和交易测试。
 
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer0.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-
 peer channel create -o orderer0.example.com:7050 -c channel1 -f ./channel-artifacts/channel1.tx --tls true --cafile $ORDERER_CA
 
 peer channel join -b channel1.block
@@ -385,6 +383,8 @@ peer chaincode instantiate -o orderer0.example.com:7050 --tls true --cafile $ORD
 peer chaincode query -C channel1 -n mycc -c '{"Args":["query","a"]}'
 
 peer chaincode invoke -o orderer0.example.com:7050  --tls true --cafile $ORDERER_CA -C channel1 -n mycc -c '{"Args":["invoke","b","a","1"]}'
+
+peer chaincode query -C channel1 -n mycc -c '{"Args":["query","a"]}'
 ```
 
 更多的测试细节可参考[一步一步搭建hyperledger环境](./build_fabric_network_step_by_step.md)中的测试章节来进行验证。
@@ -393,3 +393,4 @@ peer chaincode invoke -o orderer0.example.com:7050  --tls true --cafile $ORDERER
 
 至此，我们完成了kafka共识的orderer集群的搭建，并测试了基本的区块链业务功能。在实际生产环境中，更多的是对orderer、kafka、zookeeper参数的调校，达到符合环境的最佳性能要求。如果需要增加orderer、kafka、zookeeper等更多节点来提高可靠性，可参考文档示例增加相应配置即可。
 
+所有的yaml和配置参考[链接](https://github.com/swordboy/fabric_examples/tree/master/kafka)

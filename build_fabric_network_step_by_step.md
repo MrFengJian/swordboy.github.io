@@ -557,11 +557,7 @@ services:
 
 `docker exec -it cli bash`
 
-配置`ORDER_CA`后，即可使用系统配置生成的channel交易配置，创建对应的三个channel。
-
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-
 peer channel create -o orderer.example.com:7050 -c channel1 -f ./channel-artifacts/channel1.tx --tls true --cafile $ORDERER_CA
 ```
 
@@ -574,7 +570,6 @@ peer channel create -o orderer.example.com:7050 -c channel1 -f ./channel-artifac
 因此需要重新设置相关环境变量，才能创建channel2，如下所示：
 
 ```shell
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
 CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/server.key
 CORE_PEER_LOCALMSPID=Org2MSP
@@ -590,7 +585,6 @@ peer channel create -o orderer.example.com:7050 -c channel2 -f ./channel-artifac
 采用相同的方式，创建channel3，执行如下命令：
 
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/ca.crt
 CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/server.key
 CORE_PEER_LOCALMSPID=Org3MSP
@@ -614,7 +608,6 @@ peer channel create -o orderer.example.com:7050 -c channel3 -f ./channel-artifac
 将peer0.org1加入channel1的命令行如下所示：
 
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/server.key
 CORE_PEER_LOCALMSPID=Org1MSP
@@ -636,7 +629,6 @@ peer channel join -b channel1.block
 将peer1.org1加入到channel1的命令行如下所示：
 
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/tls/ca.crt
 CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/tls/server.key
 CORE_PEER_LOCALMSPID=Org1MSP
@@ -652,7 +644,6 @@ peer channel join -b channel1.block
 将peer0.org2加入到channel2的命令行如下所示：
 
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
 CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/server.key
 CORE_PEER_LOCALMSPID=Org2MSP
@@ -668,7 +659,6 @@ peer channel join -b channel2.block
 将peer1.org2加入到channel2的命令行如下所示：
 
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/tls/ca.crt
 CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/tls/server.key
 CORE_PEER_LOCALMSPID=Org2MSP
@@ -684,7 +674,6 @@ peer channel join -b channel2.block
 将peer0.org3加入到channel3的命令如下所示：
 
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/ca.crt
 CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/server.key
 CORE_PEER_LOCALMSPID=Org3MSP
@@ -700,7 +689,6 @@ peer channel join -b channel3.block
 将peer1.org3加入到channel3的命令如下所示：
 
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org3.example.com/peers/peer1.org3.example.com/tls/ca.crt
 CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/server.key
 CORE_PEER_LOCALMSPID=Org3MSP
@@ -720,7 +708,6 @@ peer channel join -b channel3.block
 更新org1的锚节点配置，使用如下命令行
 
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/server.key
 CORE_PEER_LOCALMSPID=Org1MSP
@@ -736,7 +723,6 @@ peer channel update -o orderer.example.com:7050 -c channel1 -f ./channel-artifac
 更新org2的锚节点配置，使用如下命令行
 
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
 CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/server.key
 CORE_PEER_LOCALMSPID=Org2MSP
@@ -752,7 +738,6 @@ peer channel update -o orderer.example.com:7050 -c channel2 -f ./channel-artifac
 更新org3的锚节点配置，使用如下命令行
 
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/ca.crt
 CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/server.key
 CORE_PEER_LOCALMSPID=Org3MSP
@@ -774,7 +759,6 @@ peer channel update -o orderer.example.com:7050 -c channel3 -f ./channel-artifac
 在cli容器中，继续执行命令行，在peer0.org1上安装chaincode，命令行如下所示。
 
 ```bash
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
 CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/server.key
 CORE_PEER_LOCALMSPID=Org1MSP
@@ -784,7 +768,7 @@ CORE_PEER_ID=cli
 CORE_LOGGING_LEVEL=DEBUG
 CORE_PEER_ADDRESS=peer0.org1.example.com:7051
 
-peer chaincode install -n mycc -v 1.0 -p github.com/hyperledger/fabric/examples/chaincode/go/chaincode_example02
+peer chaincode install -n mycc -v 1.0 -p github.com/chaincode/chaincode_example02/go/
 ```
 
 安装过程实际上就是根据`GOPATH`下指定代码进行打包，然后通过同一主机上共享的挂载卷，将chaincode发送到peer0.org1上，但不实际启动容器运行chaincode。
@@ -857,7 +841,7 @@ CORE_PEER_ID=cli
 CORE_LOGGING_LEVEL=DEBUG
 CORE_PEER_ADDRESS=peer1.org1.example.com:7051
 
-peer chaincode install -n mycc -v 1.0 -p github.com/hyperledger/fabric/examples/chaincode/go/chaincode_example02
+peer chaincode install -n mycc -v 1.0 -p github.com/chaincode/chaincode_example02/go/
 ```
 
 此时，peer1.org1不会启动chaincode容器。当执行查询时
@@ -883,7 +867,7 @@ CORE_PEER_ID=cli
 CORE_LOGGING_LEVEL=DEBUG
 CORE_PEER_ADDRESS=peer0.org2.example.com:7051
 
-peer chaincode install -n mycc -v 1.0 -p github.com/hyperledger/fabric/examples/chaincode/go/chaincode_example02
+peer chaincode install -n mycc -v 1.0 -p github.com/chaincode/chaincode_example02/go/
 
 peer chaincode instantiate -o orderer.example.com:7050 --tls true --cafile $ORDERER_CA -C channel2 -n mycc -v 1.0 -c '{"Args":["init","a","100","b","200"]}'
 
@@ -899,3 +883,5 @@ peer chaincode query -C channel2 -n mycc -c '{"Args":["query","a"]}'
 # 7 总结
 
 现在只是对社区示例的简单修改，将org、channel、peer、chaincode的操作步骤拆分开来，帮助理解。真实环境中，完全可以参考此案例进行操作，创建更多的org和channel。
+
+所有的yaml和配置参考[链接](https://github.com/swordboy/fabric_examples/tree/master/e2e_cli)
