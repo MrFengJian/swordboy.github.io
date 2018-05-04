@@ -46,9 +46,13 @@ PeerOrgs:
 
 ## 2.2 生成公私钥和证书
 
+> 注意：为避免每次命令输入过长路径，将build/bin追加到`PATH`环境变量路径中。
+>
+> `export PATH=$PATH:../../build/bin`
+
 执行下列命令，使用`crypto-config.yaml`配置生成orderer集群环境中的所有公私钥和证书。
 
-`../../build/bin/cryptogen generate --config=./crypto-config.yaml`
+`cryptogen generate --config=./crypto-config.yaml`
 
 可使用`tree cryptogen-config -d`命令来检查目录，正常生成了各个orderer节点的证书配置，如下图所示：
 
@@ -201,7 +205,7 @@ Application: &ApplicationDefaults
 
 1）使用如下命令，生成创世块
 
-`../../build/bin/configtxgen -profile ThreeOrgsOrdererGenesis -outputBlock ./channel-artifacts/genesis.block`
+`configtxgen -profile ThreeOrgsOrdererGenesis -outputBlock ./channel-artifacts/genesis.block`
 
 产生如下输出，表示创世块生成成功
 
@@ -210,9 +214,9 @@ Application: &ApplicationDefaults
 2）使用下面的命令，生成各个通道的交易配置
 
 ```bash
-../../build/bin/configtxgen -profile Orgs1Channel -outputCreateChannelTx ./channel-artifacts/channel1.tx -channelID channel1
-../../build/bin/configtxgen -profile Orgs2Channel -outputCreateChannelTx ./channel-artifacts/channel2.tx -channelID channel2
-../../build/bin/configtxgen -profile Orgs3Channel -outputCreateChannelTx ./channel-artifacts/channel3.tx -channelID channel3
+configtxgen -profile Orgs1Channel -outputCreateChannelTx ./channel-artifacts/channel1.tx -channelID channel1
+configtxgen -profile Orgs2Channel -outputCreateChannelTx ./channel-artifacts/channel2.tx -channelID channel2
+configtxgen -profile Orgs3Channel -outputCreateChannelTx ./channel-artifacts/channel3.tx -channelID channel3
 ```
 
 产生如下输出，表示创建成功。
@@ -222,9 +226,9 @@ Application: &ApplicationDefaults
 3）使用下面的命令，生成各组织的锚节点交易配置。
 
 ```bash
-../../build/bin/configtxgen -profile Orgs1Channel -outputAnchorPeersUpdate ./channel-artifacts/Org1MSPanchors.tx -channelID channel1 -asOrg Org1MSP
-../../build/bin/configtxgen -profile Orgs2Channel -outputAnchorPeersUpdate ./channel-artifacts/Org2MSPanchors.tx -channelID channel2 -asOrg Org2MSP
-../../build/bin/configtxgen -profile Orgs3Channel -outputAnchorPeersUpdate ./channel-artifacts/Org3MSPanchors.tx -channelID channel3 -asOrg Org3MSP
+configtxgen -profile Orgs1Channel -outputAnchorPeersUpdate ./channel-artifacts/Org1MSPanchors.tx -channelID channel1 -asOrg Org1MSP
+configtxgen -profile Orgs2Channel -outputAnchorPeersUpdate ./channel-artifacts/Org2MSPanchors.tx -channelID channel2 -asOrg Org2MSP
+configtxgen -profile Orgs3Channel -outputAnchorPeersUpdate ./channel-artifacts/Org3MSPanchors.tx -channelID channel3 -asOrg Org3MSP
 ```
 
 ![1525253046134](build_fabric_network_with_kafka_orders.assets/1525253046134.png)
@@ -338,8 +342,6 @@ orderer0.example.com:
       - ORDERER_KAFKA_RETRY_LONGINTERVAL=10s 
       - ORDERER_KAFKA_RETRY_LONGTOTAL=100s
       - ORDERER_KAFKA_VERBOSE=true
-      #kafka代理集群地址
-      - ORDERER_KAFKA_BROKERS=[kafka0.example.com:9292,kafka1.example.com:9292,kafka2.example.com:9292,kafka3.example.com:9292]
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: orderer
     #注意载卷的路径
@@ -351,47 +353,7 @@ orderer0.example.com:
       - 7050:7050
 ```
 
-## 4.4 peer配置修改
-
-由于默认peer连接的地址是`orderer:7050`，当orderer以集群方式部署时，使用默认值会访问不通。因此，要么额外在orderer集群前增加一个采用nginx或者haproxy的负载均衡器，要么修改peer的启动参数，使其访问正确的orderer服务，后者比较简单。相应的peer的yaml配置修改如下：
-
-```yaml
-peer0.org1.example.com:
-    container_name: peer0.org1.example.com
-    image: hyperledger/fabric-peer
-    environment:
-      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
-      # the following setting starts chaincode containers on the same
-      # bridge network as the peers
-      # https://docs.docker.com/compose/networking/
-      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=kafak_default
-      #- CORE_LOGGING_LEVEL=ERROR
-      - CORE_LOGGING_LEVEL=DEBUG
-      - CORE_PEER_TLS_ENABLED=true
-      - CORE_PEER_GOSSIP_USELEADERELECTION=true
-      - CORE_PEER_GOSSIP_ORGLEADER=false
-      - CORE_PEER_PROFILE_ENABLED=true
-      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
-      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
-      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
-    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
-    #指定orderer节点地址
-    command: peer node start --orderer orderer0.example.com:7050
-      - CORE_PEER_ID=peer0.org1.example.com
-      - CORE_PEER_ADDRESS=peer0.org1.example.com:7051
-      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org1.example.com:7051
-      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.example.com:7051
-      - CORE_PEER_LOCALMSPID=Org1MSP
-    volumes:
-        - /var/run/:/host/var/run/
-        - ../crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp:/etc/hyperledger/fabric/msp
-        - ../crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls:/etc/hyperledger/fabric/tls
-    expose:
-      - 7051
-      - 7053
-```
-
-> 在测试过程中，发现不指定orderer地址，peer仍然可以正常工作。但网络中明显没有可达的orderer:7050服务端，原因需要进一步学习了解。
+> 在前面的configtx.yaml配置中，已经增加了orderer集群连接的kafka集群地址，orderer在启动时，可以直接从创世块中读取使用。
 
 # 5 启动orderer集群的fabric环境
 
