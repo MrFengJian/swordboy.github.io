@@ -11,3 +11,6 @@
 [一步一步搭建hyperledger环境](./build_fabric_network_step_by_step.md)
 
 [kafka共识的orderer集群fabric网络环境搭建](./build_fabric_network_with_kafka_orders.md)
+
+[基于fabric-ca手动搭建fabric网络](./build_fabric_network_with_fabric_ca.md)
+
