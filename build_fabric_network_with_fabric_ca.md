@@ -921,9 +921,62 @@ peer chaincode query -C mychannel -n mycc -c '{"Args":["query","b"]}'
 - 办法给fabric-ca服务的根证书链
 - （可选），tls证书
 
-测试使用fabric-ca，为三个组织的中间ca服务器生成公私钥和tls证书，然后修改社区例子，可以正常运行。
+指定的证书目前测试可以有两种方式生成：
 
-> 使用openssl命令手动生成公私钥的方式有待进一步调查。
+1. 搭建一个fabric-ca服务器，使用fabric-ca-client的命令行，为三个组织生成中间ca服务器的证书，将证书分发给对应的中间ca服务器，进行启动。使用的示例命令如下：
+
+   ```shell
+   export FABRIC_CA_CLIENT_HOME=/root/ica-org0
+   fabric-ca-client enroll -u https://rca-org0-admin:rca-org0-adminpw@rca-org0:7054  --tls.certfiles /etc/hyperledger/fabric-ca/tls-cert.pem --enrollment.profile ca
+   ```
+
+2. 借助fabric-ca中的[pki](https://github.com/hyperledger/fabric-ca/blob/release-1.1/scripts/fvt/utils/pki)工具脚本，生成中间ca服务器的证书，然后在进行启动，响应的示例命令如下：
+
+   ```shell
+   #生成ca根证书
+   ./pki -f newca -a ca -t ec -l 256 -d sha256 \
+                           -n "/C=US/ST=NC/L=RTP/O=IBM/O=Hyperledger/OU=FVT/CN=ca/" \
+                           -K "digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment,keyAgreement,keyCertSign,cRLSign" \
+                           -E "serverAuth,clientAuth,codeSigning,emailProtection,timeStamping" \
+                           -e 20370101000000Z -s 20160101000000Z -p ca-
+   
+   #生成org0组织的中间根证书
+   ./pki -f newsub -b ica-org0 -a ca -t ec -l 256 -d sha256 \
+                           -n "/C=US/ST=NC/L=RTP/O=IBM/O=Hyperledger/OU=FVT/CN=ica-org0/"  \
+                           -K "digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment,keyAgreement,keyCertSign,cRLSign" \
+                           -E "serverAuth,clientAuth,codeSigning,emailProtection,timeStamping" \
+                           -e 20370101000000Z -s 20160101000000Z -p ica-org0-
+   
+   
+   ./pki -f newsub -b ica-org1 -a ca -t ec -l 256 -d sha256 \
+                           -n "/C=US/ST=NC/L=RTP/O=IBM/O=Hyperledger/OU=FVT/CN=ica-org1/" \
+                           -K "digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment,keyAgreement,keyCertSign,cRLSign" \
+                           -E "serverAuth,clientAuth,codeSigning,emailProtection,timeStamping" \
+                           -e 20370101000000Z -s 20160101000000Z -p ica-org1-
+   
+   
+   ./pki -f newsub -b ica-org2 -a ca -t ec -l 256 -d sha256 \
+                           -n "/C=US/ST=NC/L=RTP/O=IBM/O=Hyperledger/OU=FVT/CN=ica-org2/" \
+                           -K "digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment,keyAgreement,keyCertSign,cRLSign" \
+                           -E "serverAuth,clientAuth,codeSigning,emailProtection,timeStamping" \
+                           -e 20370101000000Z -s 20160101000000Z -p ica-org2-
+   ```
+
+   然后根据中间根证书的目录结构，创建对应的文件，以生成org0中间ca服务器目录为例：
+
+   ```shell
+   mkdir -p ica-org0/msp/{cacerts,intermediatecerts,keystore,signcerts}
+   cp $HOME/ica-org0-cert.pem ica-org0/ca-cert.pem
+   cp $HOME/ica-org0-key.pem ica-org0/msp/keystore
+   cp $HOME/ca-cert.pem ica-org0/msp/cacerts
+   cp $HOME/ca-cert.pem ica-org0/msp/intermediate/certs
+   cp $HOME/ica-org0-cert.pem ica-org0/msp/signcerts
+   cat ica-org0/ca-certs.pem ica-org0/msp/cacerts/ca-certs.pem > ica-org0/ca-chaim.pem
+   ```
+
+   按照相同的方式，构造org1、org2的中间ca服务器目录。
+
+测试使用fabric-ca，为三个组织的中间ca服务器生成公私钥和tls证书，然后修改[社区例子](https://github.com/swordboy/fabric-samples/tree/release-1.1/fabric-ca)，可以正常运行。
 
 ## 2.3 使用cryptogen生成的根证书
 
