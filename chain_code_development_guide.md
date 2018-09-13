@@ -48,7 +48,7 @@ func (fuzzy *FoozyCode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 - GetStringArgs:`[]string`，调用参数解析为字符串数组，如果无法转换可能出现乱码
 - GetFuntionAndParameters:`string,[]string`，调用参数解析为字符串数组，以第一个为函数名，后面为参数数组，如果一个参数都没有，则两个都是空值
 - GetArgsSlice():`[]byte`，将调用参数的二维数组强行转换为一维数组
-- GetTransient():`map[string][]byte,error`，比较少用，用于存放调用提案中的瞬时属性，通常用来存放加解密用的密钥等信息。
+- GetTransient():`map[string][]byte,error`，比较少用，用于存放调用提案中的临时参数，只在节点的本地存储，其他节点不存储此参数，通常用来存放加解密用的密钥等信息。
 
 ## 提取调用者身份
 
@@ -468,7 +468,156 @@ Query Result: [{"docType":"board","owner":"juli","color":"red","shape":"star"},{
 
 ## private data collection
 
-private data collection是1.2版本的新增功能，用于在通道中再进行更细粒度的数据隔离。另行说明。
+private data collection是1.2版本的新增功能，用于在通道中再进行更细粒度的数据隔离。本质上是通过旁路数据库实现的，其结构类似下图所示：
+
+![1536820637941](chain_code_development_guide.assets/1536820637941.png)
+
+- 授权节点通过gossip协议相互传播，将私有数据保存在节点本地的旁路数据库中
+- 未授权节点无法获取私有数据的值，只能存放私有数据的哈希值，用做背书、排序、记账等等。**orderer服务也不会看到私有数据的值**。
+- 所有节点，无论授权或者未被授权，都可以保存一份key，value的hash后的键值对
+
+对应上述接口，private data collections提供了一系列用于操作私有数据的接口。
+
+> **不支持对私有数据的key做history查询**
+>
+> **存储私有数据时，key相同而collection不同是两份不同的数据**
+
+示例集合配置文件
+
+```json
+[
+  {
+    "name": "collection1",
+    "policy": "OR('org1.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 1000000
+  },
+  {
+    "name": "collection2",
+    "policy": "OR('org2.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 3
+  }
+]
+```
+
+集合collection1只允许org1访问，集合collection2只允许org2访问。
+
+- GetPrivateData(collection, key string)` ([]byte, error)`。读取未被授权的集合数据时，如果对应key不存在，不会产生异常。如果存在则会产生异常，无权访问数据。
+
+示例智能合约函数
+
+```go
+func (code *ExampleChainCode04) get(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) < 2 {
+		return shim.Error("not enough args")
+	}
+	collection, key := args[0], args[1]
+	value, err := stub.GetPrivateData(collection, key)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(value)
+}
+```
+
+示例调用
+
+```shell
+#已组织org1身份读取授权访问的collection1的key，可以正常读取
+➜  peer chaincode query -C channel1 -n cc -c '{"Args":["get","collection1","collectiona"]}'
+a
+#已组织org1身份读取未授权访问的collection2的key，key不存在，不产生异常
+➜  peer chaincode query -C channel1 -n cc -c '{"Args":["get","collection2","collectiona"]}'
+#已组织org1身份读取未授权访问的collection2的key，key存在，产生异常
+➜  peer chaincode query -C channel1 -n cc -c '{"Args":["get","collection2","collectionb"]}'
+Error: endorsement failure during query. response: status:500 message:"GET_STATE failed: transaction ID: 80d41259308bc228a3c81e030d87b33f0bf581979622ac149313e45124a79ddc: Private data matching public hash version is not available. Public hash version = &version.Height{BlockNum:0x6, TxNum:0x0}, Private data version = (*version.Height)(nil)" 
+```
+
+- PutPrivateData(collection string, key string, value []byte) `error`。集合不存在时，产生异常。**对当前身份无权访问的集合，向其中放入数据可以正常放入，但无法读取**。
+
+示例智能合约函数
+
+```go
+func (code *ExampleChainCode04) put(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) < 3 {
+		return shim.Error("not enough args")
+	}
+	collection, key, value := args[0], args[1], args[2]
+	err := stub.PutPrivateData(collection, key, []byte(value))
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(nil)
+}
+```
+
+示例调用
+
+```shell
+#以org1身份向被授权的collection1中放入数据，正常放入
+➜  peer chaincode invoke -C channel1 -n cc -c '{"Args":["put","collection1","collectiona","a"]}' --tls --cafile $ORDERER_CA
+2018-09-13 17:00:51.456 CST [chaincodeCmd] InitCmdFactory -> INFO 001 Retrieved channel (channel1) orderer endpoint: orderer0.demo.com:7050
+2018-09-13 17:00:51.520 CST [chaincodeCmd] chaincodeInvokeOrQuery -> INFO 002 Chaincode invoke successful. result: status:200
+#以org1身份向未被授权的collection2中放入数据，放入过程不产生异常
+➜  peer chaincode invoke -C channel1 -n cc -c '{"Args":["put","collection2","collectionb","b"]}' --tls --cafile $ORDERER_CA
+2018-09-13 17:01:02.180 CST [chaincodeCmd] InitCmdFactory -> INFO 001 Retrieved channel (channel1) orderer endpoint: orderer0.demo.com:7050
+2018-09-13 17:01:02.278 CST [chaincodeCmd] chaincodeInvokeOrQuery -> INFO 002 Chaincode invoke successful. result: status:200
+#以组织org1身份读取未授权访问的collection2的key，key存在，产生异常
+➜  peer chaincode query -C channel1 -n cc -c '{"Args":["get","collection2","collectionb"]}'
+Error: endorsement failure during query. response: status:500 message:"GET_STATE failed: transaction ID: 80d41259308bc228a3c81e030d87b33f0bf581979622ac149313e45124a79ddc: Private data matching public hash version is not available. Public hash version = &version.Height{BlockNum:0x6, TxNum:0x0}, Private data version = (*version.Height)(nil)" 
+#以组织org2身份读取授权访问的collection2的org1组织放入的key，可以正常读取出明文
+➜  peer chaincode query -C channel1 -n cc -c '{"Args":["get","collection2","collectionb"]}'
+b
+```
+
+- DelPrivateData(collection, key string) `error`：从集合中删除key，无论当前组织是否被授权，都可以正常删除。
+
+示例智能合约函数
+
+```go
+func (code *ExampleChainCode04) delete(stub shim.ChaincodeStubInterface, args [] string) pb.Response {
+	if len(args) < 2 {
+		return shim.Error("not enough args")
+	}
+	collection, key := args[0], args[1]
+	err := stub.DelPrivateData(collection, key)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(nil)
+}
+```
+
+示例调用
+
+```shell
+#以org2身份向授权访问的集合collection2中放入键值对
+➜  peer chaincode invoke -C channel1 -n cc -c '{"Args":["put","collection2","collectionb","b"]}' --tls --cafile $ORDERER_CA
+2018-09-13 17:19:14.577 CST [chaincodeCmd] InitCmdFactory -> INFO 001 Retrieved channel (channel1) orderer endpoint: orderer0.demo.com:7050
+2018-09-13 17:19:14.880 CST [chaincodeCmd] chaincodeInvokeOrQuery -> INFO 002 Chaincode invoke successful. result: status:200
+#以org2身份向授权访问的集合collection2中读取key，可正常读取
+➜  peer chaincode invoke -C channel1 -n cc -c '{"Args":["get","collection2","collectionb","b"]}' --tls --cafile $ORDERER_CA
+2018-09-13 17:20:00.498 CST [chaincodeCmd] InitCmdFactory -> INFO 001 Retrieved channel (channel1) orderer endpoint: orderer0.demo.com:7050
+2018-09-13 17:20:00.509 CST [chaincodeCmd] chaincodeInvokeOrQuery -> INFO 002 Chaincode invoke successful. result: status:200 payload:"b"
+#以组织org1身份读取未授权访问的collection2的key，key存在，产生异常
+➜  peer chaincode query -C channel1 -n cc -c '{"Args":["get","collection2","collectionb"]}'
+Error: endorsement failure during query. response: status:500 message:"GET_STATE failed: transaction ID: 80d41259308bc228a3c81e030d87b33f0bf581979622ac149313e45124a79ddc: Private data matching public hash version is not available. Public hash version = &version.Height{BlockNum:0x6, TxNum:0x0}, Private data version = (*version.Height)(nil)"
+#以组织org1身份删除未授权访问的collection2的key，正常删除
+➜  peer chaincode invoke -C channel1 -n cc -c '{"Args":["delete","collection2","collectionb","b"]}' --tls --cafile $ORDERER_CA
+2018-09-13 17:20:24.635 CST [chaincodeCmd] InitCmdFactory -> INFO 001 Retrieved channel (channel1) orderer endpoint: orderer0.demo.com:7050
+2018-09-13 17:20:24.729 CST [chaincodeCmd] chaincodeInvokeOrQuery -> INFO 002 Chaincode invoke successful. result: status:200
+#以org2身份向授权访问的集合collection2中读取key，已经读取不到了
+➜  peer chaincode invoke -C channel1 -n cc -c '{"Args":["get","collection2","collectionb","b"]}' --tls --cafile $ORDERER_CA
+2018-09-13 17:20:38.078 CST [chaincodeCmd] InitCmdFactory -> INFO 001 Retrieved channel (channel1) orderer endpoint: orderer0.demo.com:7050
+2018-09-13 17:20:38.086 CST [chaincodeCmd] chaincodeInvokeOrQuery -> INFO 002 Chaincode invoke successful. result: status:200
+```
+
+- GetPrivateDataByRange(collection, startKey, endKey string) `(StateQueryIteratorInterface, error)`。类似不使用私有数据的对应方法，只是只能在可授权访问的集合中查询值
+- GetPrivateDataByPartialCompositeKey(collection, objectType string, keys []string)`(StateQueryIteratorInterface, error)`。类似不使用私有数据的对应方法，只是只能在可授权访问的集合中查询值
+- GetPrivateDataQueryResult(collection, query string) `(StateQueryIteratorInterface, error)`。类似不使用私有数据的对应方法，只是只能在可授权访问的集合中查询值
 
 # 参考链接
 
