@@ -14,3 +14,4 @@
 
 [基于fabric-ca手动搭建fabric网络](./build_fabric_network_with_fabric_ca.md)
 
+[智能合约开发指南](./chain_code_development_guide.md)
