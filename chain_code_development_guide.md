@@ -476,6 +476,19 @@ private data collection是1.2版本的新增功能，用于在通道中再进行
 - 未授权节点无法获取私有数据的值，只能存放私有数据的哈希值，用做背书、排序、记账等等。**orderer服务也不会看到私有数据的值**。
 - 所有节点，无论授权或者未被授权，都可以保存一份key，value的hash后的键值对
 
+### private data数据流
+
+相对与公开的数据交易流程，private data额外增加了一些步骤
+
+- 发送invoke给背书节点（此节点需要能够访问指定的集合），private data放在请求提案的transient field中
+- 背书节点模拟交易，将private data存储到本地的transient data store中（临时本地存储），通过goosip协议，根据collection policy策略，向其他被授权的节点广播数据，相应peer也存储到本地的transient data store中
+- 背书节点返回public data给客户端，同时private data的key，value的hash，客户端不会收到私有数据
+- Orderer根据private data的hash后的值进行排序，分割区块
+- Peer验证时，**统一（包括被授权的节点）**使用hash后的private data进行验证
+- Commit期间，检查自己时候有权限拿到private data，先检查transient data store，如果没有的话就从其他peer那里pull。验证提交后，将private data存储到私有数据库中，并从transient store中移除对应key的private data。
+
+### 相关接口说明
+
 对应上述接口，private data collections提供了一系列用于操作私有数据的接口。
 
 > **不支持对私有数据的key做history查询**
@@ -624,3 +637,8 @@ Error: endorsement failure during query. response: status:500 message:"GET_STATE
 智能合约示例代码
 
 https://github.com/swordboy/fabric_examples/tree/master/cc_example
+
+社区private data设计文档
+
+https://hyperledger-fabric.readthedocs.io/en/release-1.2/private-data-arch.html
+
