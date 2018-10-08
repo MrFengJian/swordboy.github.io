@@ -1,5 +1,3 @@
-[TOC]
-
 # 最简合约
 
 fabric的智能合约规范需要定义一个struct（结构体的名称不限），然后在该struct上定义Init和Invoke两个函数，定义main函数为启动入口，下面是社区最简单合约的模板，一切合约都需要在此基础上进行扩展：
@@ -631,6 +629,15 @@ Error: endorsement failure during query. response: status:500 message:"GET_STATE
 - GetPrivateDataByRange(collection, startKey, endKey string) `(StateQueryIteratorInterface, error)`。类似不使用私有数据的对应方法，只是只能在可授权访问的集合中查询值
 - GetPrivateDataByPartialCompositeKey(collection, objectType string, keys []string)`(StateQueryIteratorInterface, error)`。类似不使用私有数据的对应方法，只是只能在可授权访问的集合中查询值
 - GetPrivateDataQueryResult(collection, query string) `(StateQueryIteratorInterface, error)`。类似不使用私有数据的对应方法，只是只能在可授权访问的集合中查询值
+
+## 交易信息获取
+
+- `GetTxID() string`：获取交易ID
+- `GetTxTimestamp() (*timestamp.Timestamp, error)`：获取交易时间戳，基于UTC时间
+- `GetChannelID() string`：执行合约的通道
+- `GetTransient() (map[string][]byte, error)`：进行交易过程中，使用的瞬态参数键值对
+- `GetBinding() ([]byte, error)`：获取交易的绑定信息，类似瞬态参数，用于规避重放攻击
+- `GetSignedProposal() (*pb.SignedProposal, error)`：获取被签名的交易对象，可以从中获取到交易的签名和背书签名等信息
 
 # 参考链接
 
